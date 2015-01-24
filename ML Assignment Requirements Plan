@@ -1,0 +1,178 @@
+ML Assignment Requirements:
+
+Q: Has the student submitted a github repo?
+A: Yes, and the repo contains BOTH .md or .Rmd files AND a compiled HTML file
+
+Q: Does the submission build a machine learning algorithm to predict activity quality from activity monitors?
+
+To evaluate the HTML file you may have to download the repo and open the compiled HTML document. 
+
+Alternatively if they have submitted a repo with a gh-pages branch, you may be able to view the HTML page on the web. If the repo is: 
+
+A: 5: Yes, and they appropriately describe how the algorithm is built
+
+Q: Do the authors describe what they expect the out of sample error to be and estimate the error appropriately with cross-validation?
+What is the out of sample error?? Will have to find out.
+A: 5: Yes, the authors estimate the out of sample error with cross validation
+
+Q: Please use the space below to provide constructive feedback to the student who submitted the work. Point out the submission's strengths and identify some areas for improvement. You may also use this space to explain your grading decisions.
+
+Q: As far as you can determine, does it appear that the work submitted for this project is the work of the student who submitted it? 
+A: Yes/No
+
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases. 
+
+Goal: Predict the manner in which the people in the training set did the exercise, using the "classe" variable in the training set.
+
+      You can use any of the variables to predict with.
+
+      Create a report on how well the model was built, how cross-validation was used, and what was the out-of-sample-error.
+
+      Why were these choices made?
+
+Result: Use the finalized prediction model to predict 20 different test cases.
+
+
+Things to do: 19,622
+
+0. Preprocess? preProcess() function
+- Impute
+- Use predict() function to do the pre-processing data transformations
+ trainX <- training[, names(training) != "Class"]
+ scaledTrain <- predict(preProcValues, trainX)
+
+1. Create the following sets: createDataPartition(), createResample(), createTimeSlices()
+- Train (60%)
+- Test (20%)
+- CV (20%)
+
+2. Explore the data in the train. This will allow us to select the features: train(), predict()
+- Try to identify data which is close to 0 and eliminate.
+- Identify which data is highly correlated and eliminate it.
+- See if the data is uniformly distributed, and if not, see whether it could be normalized.
+- Split this analysis into a the "target" variable and the "feature" variable.
+
+3. This is a logistic regression model.
+
+4. Model Comparison using confusionMatrix()?
+
+
+0. Say about the IMU and http://electronics.stackexchange.com/questions/36589/what-are-the-differences-between-a-gyroscope-accelerometer-and-magnetometer and wikipedia.
+1. Clean up the data - remove empty/invalid columns. DONE Say why // data <- readCleanData("pml-training.csv")
+2. Remove columns which are not needed - time and names and windows. This can be achieved by manual means. DONE Say why. And about the accelerator vector, why was it removed? // filteredData <- filterFeaturesByName(data)
+3. Find which columns have the least variability. This will not be done, although the function has been written. 
+
+
+4. Find correlated elements. ?? Perhaps!! // dataCor <- cor(filteredData[, -49]); highDataCor <- findCorrelation(dataCor, cutoff=.9)
+4.5 plot roll, pitch, yaw against classe in a feature plot // 
+
+featurePlot(x=filteredData[, c("roll_belt", "pitch_belt", "yaw_belt")], y=filteredData$classe, plot="pairs", color=filteredData$classe)
+featurePlot(x=filteredData[, c("roll_arm", "pitch_arm", "yaw_arm")], y=filteredData$classe, plot="pairs", color=filteredData$classe)
+featurePlot(x=filteredData[, c("roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell")], y=filteredData$classe, plot="pairs", color=filteredData$classe)
+featurePlot(x=filteredData[, c("roll_forearm", "pitch_forearm", "yaw_forearm")], y=filteredData$classe, plot="pairs", color=filteredData$classe)
+
+5. Split training set
+
+set.seed(1983)
+parts <- createDataPartition(filteredData$classe, p=0.7, list=FALSE)
+train <- filteredData[parts, ]
+test <- filteredData[-parts, ]
+
+6. Create centering and scaling. Use predict to apply scalingTrain on training set; use predict to apply scalingTrain on test set.
+preProcObj <- preProcess(train[, -49], method=c("center", "scale"))
+normTrain <- predict(preProcObj, train[, -49])
+normTrain$classe <- train[, 49]
+sapply(normTrain, mean); sapply(normTrain, sd)
+normTest <- predict(preProcObj, test[, -49])
+normTest$classe <- test[, 49]
+sapply(normTest, mean); sapply(normTest, sd)
+
+
+Next Training.
+modelFit <- randomForest(classe ~., data=normTrain,  importance=TRUE)
+modelFit
+
+Prediction.
+predictions <- predict(modelFit, normTest)
+
+Verify.
+confusionMatrix(predictions, normTest$classe) 
+
+Evaluate.
+normEval <- predict(preProcObj, filteredEval[, -49])
+answers <- predict(modelFit, normEval)
+answers
+
+
+
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction    A    B    C    D    E
+         A 1672    6    0    0    0
+         B    1 1133    9    0    0
+         C    0    0 1017   13    1
+         D    0    0    0  951    1
+         E    1    0    0    0 1080
+
+Overall Statistics
+                                          
+               Accuracy : 0.9946          
+                 95% CI : (0.9923, 0.9963)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9931          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            0.9988   0.9947   0.9912   0.9865   0.9982
+Specificity            0.9986   0.9979   0.9971   0.9998   0.9998
+Pos Pred Value         0.9964   0.9913   0.9864   0.9989   0.9991
+Neg Pred Value         0.9995   0.9987   0.9981   0.9974   0.9996
+Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+Detection Rate         0.2841   0.1925   0.1728   0.1616   0.1835
+Detection Prevalence   0.2851   0.1942   0.1752   0.1618   0.1837
+Balanced Accuracy      0.9987   0.9963   0.9942   0.9932   0.9990
+
+
+
+NORM
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction    A    B    C    D    E
+         A 1672    6    0    0    0
+         B    1 1133    9    0    0
+         C    0    0 1017   11    2
+         D    0    0    0  953    1
+         E    1    0    0    0 1079
+
+Overall Statistics
+                                          
+               Accuracy : 0.9947          
+                 95% CI : (0.9925, 0.9964)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9933          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            0.9988   0.9947   0.9912   0.9886   0.9972
+Specificity            0.9986   0.9979   0.9973   0.9998   0.9998
+Pos Pred Value         0.9964   0.9913   0.9874   0.9990   0.9991
+Neg Pred Value         0.9995   0.9987   0.9981   0.9978   0.9994
+Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+Detection Rate         0.2841   0.1925   0.1728   0.1619   0.1833
+Detection Prevalence   0.2851   0.1942   0.1750   0.1621   0.1835
+Balanced Accuracy      0.9987   0.9963   0.9943   0.9942   0.9985
+
+
