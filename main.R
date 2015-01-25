@@ -1,18 +1,26 @@
 # Define libraries.
+library(knitr)
+library(reshape2)
+library(ggplot2)
+library(doParallel)
+library(pROC)
+
+# Register the number of cores.
+registerDoParallel(cores=detectCores())
+
+# Define libraries.
 library(caret)
 library(ggplot2)
-library(randomForest)
-#library(doMC)
-
-#registerDoMC(cores = 4)
 
 # Load helper functions.
 source("readCleanData.R")
 source("filterFeaturesByName.R")
 
 # Load training and evaluation data.
-cleanData <- readCleanData("pml-training.csv")
-cleanEval <- readCleanData("pml-testing.csv")
+cleanData <- readCleanData("pml-training.csv", na.thres = 0.1)
+dim(cleanData)
+cleanEval <- readCleanData("pml-testing.csv" , na.thres = 0.1)
+dim(cleanEval)
 
 # Define the list of non-required features.
 nonReqFeatures <- c("X", 
@@ -28,18 +36,10 @@ nonReqFeatures <- c("X",
                     "total_accel_forearm")
 
 # Remove non-required features.
-#data <- filterFeaturesByName(cleanData, nonReqFeatures)
-#eval <- filterFeaturesByName(cleanEval, nonReqFeatures)
-
-reqFeatures <- c("roll_belt", "pitch_belt", "yaw_belt", "roll_arm", "pitch_arm", "yaw_arm", "roll_forearm", "pitch_forearm", "yaw_forearm", "roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell")
-data <- cleanData[, c(reqFeatures, "classe")]
-eval <- cleanEval[, c(reqFeatures, "problem_id")]
-
-# Correlated data can be found using the following below. But it was
-# decided that this does affect the accuracy in any way. This the
-# only correlated feature `accel_belt_z` was retained.
-#dataCor <- cor(data[, -49]); 
-#highDataCor <- findCorrelation(dataCor, cutoff=.99)
+data <- filterFeaturesByName(cleanData, nonReqFeatures)
+dim(data)
+eval <- filterFeaturesByName(cleanEval, nonReqFeatures)
+dim(eval)
 
 # Partition cleaned and filtered data into the training and test sets.
 set.seed(1983)
@@ -47,39 +47,28 @@ parts <- createDataPartition(data$classe, p=0.7, list=FALSE)
 train <- data[parts, ]
 test <- data[-parts, ]
 
-#print(sprintf("Start modRfPlain = %s", Sys.time()))
-#rf_model_plain <- randomForest(classe ~., data=train, importance=TRUE)
-#print(sprintf("End modRfPlain = %s", Sys.time()))
+# Keep track of the start time.
+start = Sys.time()
 
+# Fit first model using the 10-fold cross-validation resampling.
+modFitRF <- train(classe ~ ., data = train, method = "rf", trControl = trainControl(method = "cv",number = 5), prox = TRUE, importance = TRUE)
+modFitRF
+modFitRF$finalModel
 
-print(sprintf("Start modFitx = %s", Sys.time()))
-rf_model_rpy_2<-train(x=train[, -13], y=train[, 13],method="rf",
-                trControl=trainControl(method="cv",number=5),
-                prox=TRUE,allowParallel=TRUE)
-print(sprintf("End modFitx = %s", Sys.time()))
-print(rf_model_rpy)
+# Predict test classes using random forest model.
+predRF <- predict(modFitRF, test[, -49])
+cmRF <- confusionMatrix(predRF, test$classe)
+cmRF
 
-# Fit first model using the 5-fold cross-validation resampling.
-#print(sprintf("Start modFit = %s", Sys.time()))
-#modFitRFCV <- train(classe ~ ., data = train, method = "rf", trControl = trainControl(method = "cv", number = 5), prox = TRUE, importance = TRUE)
-#print(sprintf("End modFit = %s", Sys.time()))
+# Calculate the class range to select from the finalModel confustion matrix.
+classRange <- seq_along(modFitRF$finalModel$classes)
 
-# Fit a second model using caret default settings of bootstrap resampling.
-#print(sprintf("Start modFit2 = %s", Sys.time()))
-#modFitRFBS <- train(classe ~ ., data = train, method ="rf", prox = TRUE, importance = TRUE)
-#print(sprintf("End modFit2 = %s", Sys.time()))
+# Calculate the estimated out-of-sample (OOB) error from the finalModel confustion matrix as a percentage.
+estimatedErr <- round((1 - (sum(diag(modFitRF$finalModel$confusion)) / sum(modFitRF$finalModel$confusion[classRange, classRange]))) * 100, 2)
 
-# Fit a third model, this time using CART.
-#print(sprintf("Start modFit3 = %s", Sys.time()))
-#modFitCART <- train(classe ~ ., data = train, method="rpart")
-#print(sprintf("End modFit3 = %s", Sys.time()))
+# Calculate the actual out-of-sample error from the confusion matrix taken against the test set as a percentage.
+actualErr <- round((1 - cmRF$overall[1]) * 100, 2)
 
-# Use models to perform predictions on the test set.
-#predictions <- predict(modFit, test)
-#predictions2 <- predict(modFit2, test)
-#predictions3 <- predict(modFit3, test)
+# Finally calculate the total running time in seconds.
+totTime <- as.integer(Sys.time() - start)
 
-# Create confusion matrices for each.
-#confusionMatrix(predictions, test$classe)
-#confusionMatrix(predictions2, test$classe)
-#confusionMatrix(predictions3, test$classe)

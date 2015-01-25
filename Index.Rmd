@@ -24,35 +24,35 @@ output:
 
 # Introduction
 
-This report describes the analysis and design required to implement the set assignment for the [Practical Machine Learning](https://class.coursera.org/predmachlearn-010) course. It first outlines the basic task assigned, and then goes on to explaining how the data was analyzed, the relevant features selected, and also how the model was built and implemented. Finally, the performance of the model is measured and evaluated. The required results for the 20 test examples are listed thereafter.
+This report describes the analysis and design required to implement the set assignment for the [Practical Machine Learning](https://class.coursera.org/predmachlearn-010) course. It first outlines the basic task assigned, and then goes on to explaining how the data was analyzed, the relevant features selected, and also how the model was built. Finally, the performance of the model is measured and evaluated. The required results for the 20 test examples are listed thereafter.
 
-# Background
+## Background
 
 > "Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset)."^1^
 
-^1^Copied verbatim out of the assigned problem description
+^1^Copied verbatim out of the assigned problem description.
 
-The aim would be then to use this data to train a classification model with which new and unseen test examples are predicted. 
+The aim was to utilize the data mentioned above to train a classification model with which new and unseen test examples are predicted.
 
 ## Research
 
-Manual examination of the training and test data led to the fact that the measurements taken are of the following types:
+Manual examination of the training and test data revealed that the measurements taken are of the following types:
 
-* Accelerometer data: Accelerometers measure inertial acceleration.
-* Gyroscope data: Gyroscopes measure changes in orientation with reference to a starting position.
-* Magnetometer data: Magnetometers measure magnetic fields.
+* Accelerometer data: These measure inertial acceleration.
+* Gyroscope data: These measure changes in orientation with reference to a starting position.
+* Magnetometer data: These measure magnetic fields.
 
- More generally, these three measurements combined detect acceleration, and also changes in rotational attributes, namely the roll, pitch and yaw. In addition, it is common to find these three components housed into a single electronic device known as an IMU (Inertial Measurement Unit). For more information on the topic, visit the Wikipedia [link](http://en.wikipedia.org/wiki/Inertial_measurement_unit) from where this information was adapted.
+ More generally, these three measurements combined together detect acceleration, and also changes in rotational attributes, namely the roll, pitch and yaw. In addition, it is common to find these three components housed into a single electronic device known as an IMU (Inertial Measurement Unit). For more information on the topic, visit the Wikipedia [link](http://en.wikipedia.org/wiki/Inertial_measurement_unit) from where this information was adapted.
 
-# Feature Selection
+# Pre-processing
 
-This section explains how the features used to train the model were selected. This involved loading and cleaning the data, and then examining it to determine which features to select.
+This section explains how the features used to train the data model were chosen how the data was loaded and cleaned, and from this, how the training features were selected. 
 
 ## Loading and Cleaning the Data
 
-The data used for completing this assignment can be found at this [link]( http://groupware.les.inf.puc-rio.br/har). The [training](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv) and [evaluation](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) data sets are provided in the form of CSV web resources. The training data will be used to train the final model. The evaluation data will be used to evaluate the built model, and will shed light on how the final model performed. **Note** that even though the test data file is names `pml-testing.csv`, we will refer to this file as having the evaluation data and **not** the test data. This is to avoid confusion with the test set used usually when training the data model.
+The data used for completing this assignment can be found at this [link](http://groupware.les.inf.puc-rio.br/har). The [training](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv) and [evaluation](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv) data sets are provided in the form of CSV web resources. The training data was used to train the data model, whereas the evaluation data was used to evaluate the built model (this eveluation yielded the answers required for the programming part of this assigment). Through this, we were able to gauge the overall model performance. **Note** that even though the test data file is named `pml-testing.csv`, we refer to this file as having the evaluation data and **not** the test data. This is to avoid naming confusion with the test set that is generated by partitioning the data using `createDataPartition()`.
 
-After the data sets were downloaded on the local machine and examined, it was immediately noticed that much of the observation features contained empty or invalid values; these had to be filtered out first. To this end, the `readCleanData()` function was implemented. It loads data from a given file path, and removes all those features having observations containing a large number of empty spaces, `NA` or `#DIV/0!` values. This, it does by first loading the file and transforming these values to `NA`s. That done, the ratio of `NA` values for each feature over *all* observations is calculated. Features are then discared based on a simple treshhold, which was set to the value of `0.1`. This means that for a feature to be valid, it must contain at least 10% of non-NA values over *all* observations for that feature. More information can be obtained by examining the [readCleanData.R](github link goes here) file. Both the training and evaluation sets are read in using this method.
+Once the data sets were downloaded on the local machine and examined, it was immediately noticed that much of the observation features contained empty or invalid values and these had to be filtered out first. To this end, the `readCleanData()` function was created. It loads data from a given file path, and removes any feature having observations containing a large number of empty spaces, `NA` or `#DIV/0!` values. This, it does by first loading the file and transforming these values to `NA`s. Then the ratio of `NA` values for each feature over *all* observations is calculated. Features are discared based on a simple threshold value, which in our case, was set to be `0.1`. This means that for a feature to be valid, it must contain *at least* 10% of non-NA values over *all* observations for that feature. More information can be obtained by examining the [readCleanData.R](https://github.com/duncanatt/pml-assignment/blob/master/readCleanData.R) file. Both the training and evaluation data sets are read in using this method, as shown underneath:
 
 ```{r}
 # Define libraries.
@@ -70,11 +70,11 @@ cleanEval <- readCleanData("pml-testing.csv" , na.thres = 0.1)
 dim(cleanEval)
 ```
 
-After the cleaning process was completed, `r ncol(cleanData)` features were retained; all the others were discarded. With the data cleaned, the features of interest were selected next.
+After the cleaning process was completed, `r ncol(cleanData)` features remained; all the others were discarded. From this clean data, the features with which the data model was built were selected next.
 
-## Selecting Features of Interest
+## Feature Selection
 
-The second stage of pre-processing required the cleaned data to be examined, so that a sensible subset of features is extracted. Ideally this new set contains only those features which are highly relevant to the task at hand. 
+The second stage of pre-processing required the cleaned data to be analyzed, so that a sensible subset of features is extracted. Ideally, this new set contained only those features which are highly relevant to the classification task at hand. Amongst other things, this means that these features capture a lot variability, as this helps us distinguish between different observations more easily. Near-zero values could also be weeded out, as these do not provide usable data to our model. 
 
 ```{r}
 # Define the list of non-required features.
@@ -97,7 +97,11 @@ eval <- filterFeaturesByName(cleanEval, nonReqFeatures)
 dim(eval)
 ```
 
-After some background research as well as observation of the data, the following `r length(nonReqFeatures)` features were chosen to be removed, so that `r ncol(data) - 1` features were finally retained. The classification variable `classe` was also kept in the training set for the moment.
+After some background research as well as observation of the data, the following `r length(nonReqFeatures)` features listed in the table below were chosen to be removed, so that only `r ncol(data) - 1` features were retained. The classification variable `classe` was also kept in the training set for convenience, since this was used in the formula passed to the `train()` function. Features were retained based on their variability and non-near-zero value, as explained above. Also, manual examination and insight into what each feature represents also proved useful when removing features. For example `user_name` is not directly related to whether the training outcome belonged in any particular class. The timestamp did also not appear to be related with the training outcome.
+
+The remaining features could have then been also checked for correlations, in an effort to reduce the feature set futher. Only one single feature was found to be correlated using a cutoff setting of 0.99, namely `accel_belt_z`. Again, manual inspection revealed that this single feature could be very well left in the original feature set.
+
+A final close inspection of the filtered data revealed that no `NA` values were present in any feature (using `sum(is.na(cleanData)) == 0`), and as a consquence, no imputation was required from our end.
 
 Index in Data Set | Removed Feature Name
 -                 | -
@@ -113,7 +117,7 @@ Index in Data Set | Removed Feature Name
 102               | total_accel_dumbbell 
 140               | total_accel_forearm  
 
-The chosen features are depicted in the figure underneath, as histogram plots.
+The chosen features (`r col(data) - 1`) are shown in the figure below, as histogram plots.
 
 ```{r, echo = FALSE, fig.width=8, fig.height=24}
 d <- melt(data[, -49])
@@ -122,9 +126,9 @@ ggplot(d, aes(x = value)) +
     geom_histogram()
 ```
 
-# Pre-processing
+# Implementation
 
-Now that all the unusable features were remove from the original data set, this was be pre-processed, prior to being fed into the learning algorithm. Close examination of the filtered data revealed that no `NA` values were present (using `sum(is.na(cleanTrain))`) in the training set. Therefore no imputation was required, as all values were complete. That being the case, the data was partitioned into a training and test sets. These were randomly paritioned on `classe` using a 70%-30% split for the training and test sets respectively. 
+The data set with reduced features was randomly partitioned into training and test sets, on `classe` using a 70%-30% split for the training and test sets respectively, as shown below:
 
 ```{r}
 # Partition cleaned and filtered data into the training and test sets.
@@ -134,21 +138,11 @@ train <- data[parts, ]
 test <- data[-parts, ]
 ```
 
-Prior to partitioning, the data could have been also checked for correlated feature values, to further reduce the feature set. Only one single feature was found to be correlated with a cutoff setting of 0.99, namely `accel_belt_z`. Manual inspection revealed that this single feature could be very well left in the original feature set.
+The historgams above reveal that not all the data is normally distributed, nor is it scaled. It turns out however that shifting and scaling is not required in our case, since random forests were used to build the data model. Random forests do not require the data to be normalized, as opposed to other gradient descent-based methods such as neural nets, linear regression or SVMs. 
 
-```{r}
-# Correlated data can be found using the following below. But it was
-# decided that this does affect the accuracy in any way. This the
-# only correlated feature `accel_belt_z` was retained.
-dataCor <- cor(data[, -49]); 
-highDataCor <- findCorrelation(dataCor, cutoff = 0.99)
-```
+## Training the Model
 
-Taking a look at the historgams depicted above immediately reveals that not all the data is normally distributed, nor is it scaled. It turns out however that shifting and scaling is not required in our case, as the random forest training model will be used. Apart from being effective and speedy, random forests do not normalization. Gradient descent methods such as neural nets, linear regression or SVMs benefit from such pre-processing, but this does not hold for random forests.
-
-# Training the Model
-
-The training data was fit using a random forest model. Caret defaults to using bootstrap resampling. Yet, for this particular model, 10-fold cross-validation resampling was used. In addition, a CART model was also fitted as an exmperiment, so that it could be compared to the random forest.
+The training data was fit using a random forest model. Caret defaults to using bootstrap resampling. Yet, for this particular model, 10-fold cross-validation resampling was used. In addition, a CART model was also fitted as an experiment, so that it could be compared to the random forest.
 
 ```{r, echo = FALSE}
 # Keep track of the start time.
@@ -185,7 +179,7 @@ cmRF
 # Calculate the class range to select from the finalModel confustion matrix.
 classRange <- seq_along(modFitRF$finalModel$classes)
 
-# Calculate the estimated out-of-sample (OOB) error from the finalModel confustion matrix as a percentage.
+# Calculate the estimated out-of-sample (or OOB) error from the finalModel confustion matrix as a percentage.
 estimatedErr <- round((1 - (sum(diag(modFitRF$finalModel$confusion)) / sum(modFitRF$finalModel$confusion[classRange, classRange]))) * 100, 2)
 
 # Calculate the actual out-of-sample error from the confusion matrix taken against the test set as a percentage.
@@ -195,7 +189,7 @@ actualErr <- round((1 - cmRF$overall[1]) * 100, 2)
 totTime <- as.integer(Sys.time() - start)
 ``` 
 
-For the random forest model, the esitmated out-of-sample error was `r estimatedErr`%, while the actual out-of-sample error obtained from the confusion matrix was `r actualErr`%. The whole model took `r totTime` seconds to train.
+For the random forest model, the esitmated out-of-sample error was `r estimatedErr`%, while the actual out-of-sample error obtained from the confusion matrix was `r actualErr`%. This means a `r abs(estimatedErr - actualErr)`% difference between the estimated and actual out-of-sample error. The whole model took `r totTime` minutes to train.
 
 
 ```{r}
@@ -205,4 +199,30 @@ For the random forest model, the esitmated out-of-sample error was `r estimatedE
 #roc(test$classe, predict(modFitCART, test, type = "prob"))
 #text(0.5, 0.4, adj = c(0,0), paste("process time:",round(timeLDA[3],1),"(s)", sep=" "), cex=0.6666)
 ```
+
+
+
+
+
+## Evaluation
+
+The final assignment task is to evaluate the generated model against the evaluation set containing `r nrow(eval)` unseen examples. 
+
+```{r}
+answers <- predict(modFitRF, eval[, -49])
+answers
+```
+
+```{r, echo = FALSE}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_", i, ".txt")
+    write.table(x[i], file = filename, quote = FALSE, row.names = FALSE, col.names = FALSE)
+  }
+}
+
+pml_write_files(as.character(answers))
+```
+
 

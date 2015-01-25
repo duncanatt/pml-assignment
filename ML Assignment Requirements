@@ -99,6 +99,7 @@ predictions <- predict(modelFit, normTest)
 Verify.
 confusionMatrix(predictions, normTest$classe)
 B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B ORIG
+B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B
 B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B MINE rf_model<-train(classe~.,data=train,method="rf", trControl=trainControl(method="cv", number=5), prox=TRUE,allowParallel=TRUE)
 C  A  C  A  A  C  C  A  A  A  C  C  C  A  C  A  A  A  A  C MINE (1 min) modFit3 <- train(classe ~ ., data = train, method="rpart")
 B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B MINE (50 mins) but with roll, pitch & yaw f_model_rpy<-train(classe~.,data=train,method="rf", trControl=trainControl(method="cv",number=5), prox=TRUE,allowParallel=TRUE)
