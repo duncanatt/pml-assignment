@@ -132,7 +132,61 @@ add to matrix: m[i, ] <- vector of 155 elems
 add column to frame: data$y <- y
 add to result matrix: res[i, ] <- predict(modFit, train[, -49])
 
+Plots:
 
+Error plot against the number of trees:
+---------------------------------------
+meltErr <- melt(modFitRF$finalModel$err.rate[, classRange + 1], value.name = "Error", varnames = c("Trees", "Classe"))
+ggplot(data = meltErr, aes(x = Trees, y = Error, group = Classe, colour = Classe)) +
+     geom_line() +
+     ggtitle("Number of Trees vs Error")
+
+Find opt error line
+-------------------
+firstErr <- c(modFitRF$finalModel$err.rate[, 1], 0)
+secondErr <- c(0, modFitRF$finalModel$err.rate[, 1])
+absErrDiff <- abs(err1 - err2)[-length(err1)]
+elbow <- (length(err1) - 1) - match(FALSE, rev(absErrDiff < 0.0005))
+
+
+
+Plot histograms:
+----------------
+meltHist <- melt(data[, -49], id.vars = NULL, value.name = "Value", variable.name = "Feature")
+ggplot(data = meltHist, aes(x = Value)) + 
+    facet_wrap(~Feature, scales = "free_x", ncol = 4) + 
+    geom_histogram() +
+    xlab("Feature Value") + 
+    ylab("Observation Frequency") + 
+    ggtitle("Selected Features vs. Frequency")
+
+Plot Confusion Matrix:
+----------------------
+
+
+cmNorm <- as.data.frame(as.table(apply(cmRF$table, 1, function(x)(x - min(x)) / (max(x) - min(x)))))
+
+cmNorm <- as.data.frame(as.table(apply(cmRF$table, 1, function(x)(x - mean(x)) / sd(x))))
+colnames(cmNorm) <- c("Prediction", "Reference", "Freq")
+
+ggplot(cmNorm, aes(x = Reference, y = Prediction)) +
+    geom_tile(aes(fill = Freq)) + 
+    geom_text(aes(fill = cmNorm$Freq, label = round(cmNorm$Freq, 4))) +
+    scale_fill_gradient(breaks=seq(from=-.5, to=4, by=.2))
+    scale_x_discrete(name="Actual Class") + 
+    scale_y_discrete(name="Predicted Class") + 
+    labs(fill="Normalized\nFrequency") +
+    ggtitle("Normalized Confusion Matrix on Test Examples")
+    
+
+
+(trainCapAve  - mean(trainCapAve))/sd(trainCapAve) 
+
+function(x) { (x  - mean(x)) / sd(x) }
+
+apply(cmRF$table, 1, function(x)(x - mean(x)) / sd(x))
+apply(cmRF$table, 1, function(x)(x - min(x)) / (max(x) - min(x)))
+apply(cmRF$table, 1, function(x)(x / sum(x)))
 
 Confusion Matrix and Statistics
 
