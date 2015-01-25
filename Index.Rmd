@@ -118,11 +118,6 @@ Index in Data Set | Removed Feature Name
 The chosen features (`r ncol(data) - 1`) are shown in the figure below, as histogram plots.
 
 ```{r plot_feature_histograms, echo = FALSE, fig.width=8, fig.height=24}
-#d <- melt(data[, -49])
-#ggplot(data = d, aes(x = value)) + 
-#    facet_wrap(~variable, scales = "free_x", ncol = 4) + 
-#    geom_histogram()
-
 # Plot a panel of histograms, one for each feature.
 meltHist <- melt(data[, -49], id.vars = NULL, value.name = "Value", variable.name = "Feature")
 ggplot(data = meltHist, aes(x = Value)) + 
@@ -155,7 +150,7 @@ start = Sys.time()
 ```
 
 ```{r fit_model}
-#F it first model using the 10-fold cross-validation resampling.
+# Fit first model using the 10-fold cross-validation resampling.
 modFitRF <- train(classe ~ ., data = train, method = "rf", trControl = trainControl(method = "cv",number = 5), prox = TRUE, importance = TRUE)
 modFitRF
 modFitRF$finalModel
